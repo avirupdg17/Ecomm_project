@@ -1,0 +1,280 @@
+openapi: 3.0.3
+info:
+  title: ecom-order-service
+  version: 0.1.0
+security:
+- bearerAuth: []
+paths:
+  /api/orders:
+    post:
+      x-roles:
+      - CUSTOMER
+      summary: Create order
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '200':
+          description: Existing order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '409':
+          $ref: '#/components/responses/ApiError409'
+        '422':
+          $ref: '#/components/responses/ApiError422'
+        '503':
+          $ref: '#/components/responses/ApiError503'
+      description: 'Allowed roles: CUSTOMER.'
+  /api/orders/{id}:
+    get:
+      x-roles:
+      - CUSTOMER
+      - ADMIN
+      summary: Get order
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderWithHistory'
+        '403':
+          $ref: '#/components/responses/ApiError403'
+        '404':
+          $ref: '#/components/responses/ApiError404'
+      description: 'Allowed roles: CUSTOMER or ADMIN.'
+  /api/orders/customer/{customerId}:
+    get:
+      x-roles:
+      - CUSTOMER
+      - ADMIN
+      summary: List customer orders
+      parameters:
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: size
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPage'
+      description: 'Allowed roles: CUSTOMER or ADMIN.'
+  /api/orders/{id}/cancel:
+    post:
+      x-roles:
+      - CUSTOMER
+      - ADMIN
+      summary: Cancel order
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '409':
+          $ref: '#/components/responses/ApiError409'
+      description: 'Allowed roles: CUSTOMER or ADMIN.'
+  /api/orders/{id}/recover:
+    post:
+      x-roles:
+      - ADMIN
+      - SERVICE
+      summary: Recover order
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+      description: 'Allowed roles: ADMIN or SERVICE.'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiError:
+      type: object
+      required:
+      - timestamp
+      - status
+      - error
+      - code
+      - message
+      - path
+      - correlationId
+      - details
+      properties:
+        timestamp:
+          type: string
+        status:
+          type: integer
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        correlationId:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            required:
+            - field
+            - issue
+            properties:
+              field:
+                type: string
+              issue:
+                type: string
+    OrderRequest:
+      type: object
+      properties:
+        simulatedPaymentOutcome:
+          type: string
+          enum:
+          - SUCCESS
+          - DECLINED
+          - TIMEOUT
+    OrderItem:
+      type: object
+      additionalProperties: true
+    Order:
+      type: object
+      required:
+      - id
+      - status
+      - items
+      - subtotal
+      - discountAmount
+      - totalAmount
+      - currency
+      - reservationRef
+      - paymentRef
+      - createdAt
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        subtotal:
+          type: number
+        discountAmount:
+          type: number
+        totalAmount:
+          type: number
+        currency:
+          type: string
+        reservationRef:
+          type: string
+        paymentRef:
+          type: string
+        createdAt:
+          type: string
+    OrderWithHistory:
+      allOf:
+      - $ref: '#/components/schemas/Order'
+      type: object
+      required:
+      - statusHistory
+      properties:
+        statusHistory:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    OrderPage:
+      type: object
+      additionalProperties: true
+  responses:
+    ApiError403:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ApiError404:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ApiError409:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ApiError422:
+      description: Unprocessable entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ApiError503:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+servers:
+- url: http://localhost:8085

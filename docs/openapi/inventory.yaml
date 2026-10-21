@@ -1,0 +1,295 @@
+openapi: 3.0.3
+info:
+  title: ecom-inventory-service
+  version: 0.1.0
+security:
+- bearerAuth: []
+paths:
+  /api/inventory/{productId}:
+    get:
+      x-roles:
+      - AUTHENTICATED
+      summary: Get stock
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stock'
+        '404':
+          $ref: '#/components/responses/ApiError404'
+      description: 'Allowed roles: AUTHENTICATED.'
+  /api/inventory/{productId}/adjustments:
+    post:
+      x-roles:
+      - ADMIN
+      - SERVICE
+      summary: Adjust stock
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Adjustment'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stock'
+        '409':
+          $ref: '#/components/responses/ApiError409'
+      description: 'Allowed roles: ADMIN or SERVICE.'
+  /api/inventory/reservations:
+    post:
+      x-roles:
+      - SERVICE
+      - ADMIN
+      summary: Reserve stock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '200':
+          description: Existing reservation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '409':
+          $ref: '#/components/responses/ApiError409'
+      description: 'Allowed roles: SERVICE or ADMIN.'
+  /api/inventory/reservations/{id}/confirm:
+    post:
+      x-roles:
+      - SERVICE
+      - ADMIN
+      summary: Confirm reservation
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationStatus'
+        '409':
+          $ref: '#/components/responses/ApiError409'
+      description: 'Allowed roles: SERVICE or ADMIN.'
+  /api/inventory/reservations/{id}/release:
+    post:
+      x-roles:
+      - SERVICE
+      - ADMIN
+      summary: Release reservation
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationStatus'
+        '409':
+          $ref: '#/components/responses/ApiError409'
+      description: 'Allowed roles: SERVICE or ADMIN.'
+  /api/inventory/reservations/{id}:
+    get:
+      x-roles:
+      - AUTHENTICATED
+      summary: Get reservation
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '404':
+          $ref: '#/components/responses/ApiError404'
+      description: 'Allowed roles: AUTHENTICATED.'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiError:
+      type: object
+      required:
+      - timestamp
+      - status
+      - error
+      - code
+      - message
+      - path
+      - correlationId
+      - details
+      properties:
+        timestamp:
+          type: string
+        status:
+          type: integer
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        correlationId:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            required:
+            - field
+            - issue
+            properties:
+              field:
+                type: string
+              issue:
+                type: string
+    Stock:
+      type: object
+      required:
+      - productId
+      - availableQuantity
+      - reservedQuantity
+      - version
+      properties:
+        productId:
+          type: string
+        availableQuantity:
+          type: integer
+        reservedQuantity:
+          type: integer
+        version:
+          type: integer
+    Adjustment:
+      type: object
+      required:
+      - delta
+      - reason
+      properties:
+        delta:
+          type: integer
+        reason:
+          type: string
+        reference:
+          type: string
+    ReservationItem:
+      type: object
+      required:
+      - productId
+      - quantity
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+    ReservationRequest:
+      type: object
+      required:
+      - orderRef
+      - items
+      properties:
+        orderRef:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationItem'
+    Reservation:
+      type: object
+      required:
+      - reservationId
+      - status
+      - expiresAt
+      - items
+      properties:
+        reservationId:
+          type: string
+        status:
+          type: string
+          enum:
+          - PENDING
+          - CONFIRMED
+          - RELEASED
+          - EXPIRED
+        expiresAt:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationItem'
+    ReservationStatus:
+      type: object
+      required:
+      - reservationId
+      - status
+      properties:
+        reservationId:
+          type: string
+        status:
+          type: string
+          enum:
+          - CONFIRMED
+          - RELEASED
+  responses:
+    ApiError404:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ApiError409:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+servers:
+- url: http://localhost:8083

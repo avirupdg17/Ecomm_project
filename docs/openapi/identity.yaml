@@ -1,0 +1,299 @@
+openapi: 3.0.3
+info:
+  title: ecom-identity-service
+  version: 0.1.0
+security:
+- bearerAuth: []
+paths:
+  /api/users/register:
+    post:
+      x-roles: []
+      summary: Register a user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisteredUser'
+        '400':
+          $ref: '#/components/responses/ApiError400'
+        '409':
+          $ref: '#/components/responses/ApiError409'
+      description: 'Allowed roles: public (no authentication).'
+  /api/auth/login:
+    post:
+      x-roles: []
+      summary: Log in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/ApiError401'
+      description: 'Allowed roles: public (no authentication).'
+  /api/users/me:
+    get:
+      x-roles:
+      - CUSTOMER
+      - ADMIN
+      summary: Get current user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      description: 'Allowed roles: CUSTOMER or ADMIN.'
+    put:
+      x-roles:
+      - CUSTOMER
+      - ADMIN
+      summary: Update current profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Profile'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/ApiError400'
+      description: 'Allowed roles: CUSTOMER or ADMIN.'
+  /api/users/{id}:
+    get:
+      x-roles:
+      - ADMIN
+      summary: Administrative user lookup
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/ApiError404'
+      description: 'Allowed roles: ADMIN.'
+  /actuator/health:
+    get:
+      x-roles: []
+      summary: Health
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+      description: 'Allowed roles: public (no authentication).'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiError:
+      type: object
+      required:
+      - timestamp
+      - status
+      - error
+      - code
+      - message
+      - path
+      - correlationId
+      - details
+      properties:
+        timestamp:
+          type: string
+        status:
+          type: integer
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        correlationId:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            required:
+            - field
+            - issue
+            properties:
+              field:
+                type: string
+              issue:
+                type: string
+    RegisterRequest:
+      type: object
+      required:
+      - email
+      - password
+      - fullName
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        fullName:
+          type: string
+    RegisteredUser:
+      type: object
+      required:
+      - id
+      - email
+      - roles
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+    LoginRequest:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      required:
+      - accessToken
+      - tokenType
+      - expiresInSeconds
+      - userId
+      - roles
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          enum:
+          - Bearer
+        expiresInSeconds:
+          type: integer
+        userId:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+    Profile:
+      type: object
+      required:
+      - fullName
+      - phone
+      - addressLine1
+      - city
+      - postcode
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        addressLine1:
+          type: string
+        city:
+          type: string
+        postcode:
+          type: string
+    User:
+      type: object
+      required:
+      - id
+      - email
+      - roles
+      - profile
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        profile:
+          $ref: '#/components/schemas/Profile'
+    Health:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - UP
+  responses:
+    ApiError400:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ApiError401:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ApiError404:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ApiError409:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+servers:
+- url: http://localhost:8081

@@ -1,0 +1,367 @@
+openapi: 3.0.3
+info:
+  title: ecom-cart-service
+  version: 0.1.0
+security:
+- bearerAuth: []
+paths:
+  /api/carts/current:
+    get:
+      x-roles:
+      - CUSTOMER
+      summary: Get active cart
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+      description: 'Allowed roles: CUSTOMER.'
+  /api/carts/items:
+    post:
+      x-roles:
+      - CUSTOMER
+      summary: Add cart item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          $ref: '#/components/responses/ApiError400'
+        '404':
+          $ref: '#/components/responses/ApiError404'
+      description: 'Allowed roles: CUSTOMER.'
+  /api/carts/items/{itemId}:
+    put:
+      x-roles:
+      - CUSTOMER
+      summary: Update cart item
+      parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quantity'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          $ref: '#/components/responses/ApiError400'
+      description: 'Allowed roles: CUSTOMER.'
+    delete:
+      x-roles:
+      - CUSTOMER
+      summary: Remove cart item
+      parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No content
+      description: 'Allowed roles: CUSTOMER.'
+  /api/carts/discount:
+    post:
+      x-roles:
+      - CUSTOMER
+      summary: Apply discount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - code
+              properties:
+                code:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '404':
+          $ref: '#/components/responses/ApiError404'
+        '422':
+          $ref: '#/components/responses/ApiError422'
+      description: 'Allowed roles: CUSTOMER.'
+  /api/carts/checkout-summary:
+    post:
+      x-roles:
+      - CUSTOMER
+      - SERVICE
+      summary: Get checkout summary
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerId:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSummary'
+        '422':
+          $ref: '#/components/responses/ApiError422'
+      description: 'Allowed roles: CUSTOMER or SERVICE.'
+  /api/carts/{cartId}/checked-out:
+    post:
+      x-roles:
+      - SERVICE
+      summary: Mark cart checked out
+      parameters:
+      - name: cartId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+      description: 'Allowed roles: SERVICE.'
+  /api/discounts:
+    post:
+      x-roles:
+      - ADMIN
+      summary: Create discount rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+      description: 'Allowed roles: ADMIN.'
+    get:
+      x-roles:
+      - ADMIN
+      summary: List discount rules
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+      description: 'Allowed roles: ADMIN.'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiError:
+      type: object
+      required:
+      - timestamp
+      - status
+      - error
+      - code
+      - message
+      - path
+      - correlationId
+      - details
+      properties:
+        timestamp:
+          type: string
+        status:
+          type: integer
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        correlationId:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            required:
+            - field
+            - issue
+            properties:
+              field:
+                type: string
+              issue:
+                type: string
+    Quantity:
+      type: object
+      required:
+      - quantity
+      properties:
+        quantity:
+          type: integer
+    CartItemRequest:
+      type: object
+      required:
+      - productId
+      - quantity
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+    CartItem:
+      type: object
+      required:
+      - productId
+      - quantity
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+    Cart:
+      type: object
+      required:
+      - id
+      - customerId
+      - items
+      - subtotal
+      - discountCode
+      - discountAmount
+      - total
+      - currency
+      properties:
+        id:
+          type: string
+        customerId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        subtotal:
+          type: number
+        discountCode:
+          type: string
+        discountAmount:
+          type: number
+        total:
+          type: number
+        currency:
+          type: string
+    CheckoutItem:
+      type: object
+      required:
+      - productId
+      - sku
+      - productName
+      - quantity
+      - unitPrice
+      - lineTotal
+      properties:
+        productId:
+          type: string
+        sku:
+          type: string
+        productName:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        lineTotal:
+          type: number
+    CheckoutSummary:
+      type: object
+      required:
+      - cartId
+      - customerId
+      - items
+      - subtotal
+      - discountCode
+      - discountAmount
+      - total
+      - currency
+      properties:
+        cartId:
+          type: string
+        customerId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckoutItem'
+        subtotal:
+          type: number
+        discountCode:
+          type: string
+        discountAmount:
+          type: number
+        total:
+          type: number
+        currency:
+          type: string
+  responses:
+    ApiError400:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ApiError404:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ApiError422:
+      description: Unprocessable entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+servers:
+- url: http://localhost:8084
