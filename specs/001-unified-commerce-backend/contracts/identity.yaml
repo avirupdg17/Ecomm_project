@@ -1,0 +1,8 @@
+openapi: 3.0.3
+info: {title: Identity & Profile API, version: v1}
+servers: [{url: http://localhost:8081}]
+paths:
+  /api/users/register: {post: {summary: Register customer, security: [], responses: {"201": {description: Created}, "400": {description: Invalid input}, "409": {description: Email exists}}}}
+  /api/auth/login: {post: {summary: Issue JWT, security: [], responses: {"200": {description: Token issued}, "401": {description: Invalid credentials}}}}
+  /api/users/me: {get: {summary: Read own profile, responses: {"200": {description: Profile}, "401": {description: Unauthorized}}}, put: {summary: Update own profile, responses: {"200": {description: Updated}, "400": {description: Invalid input}}}}
+  /actuator/health: {get: {summary: Health, security: [], responses: {"200": {description: Healthy}}}}

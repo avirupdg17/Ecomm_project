@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info: {title: Cart & Pricing API, version: v1}
+servers: [{url: http://localhost:8084}]
+paths:
+  /api/carts/current: {get: {summary: Read active cart, responses: {"200": {description: Cart}}}}
+  /api/carts/items: {post: {summary: Add cart item, responses: {"201": {description: Updated cart}}}}
+  /api/carts/items/{itemId}: {put: {summary: Change quantity, responses: {"200": {description: Updated cart}}}, delete: {summary: Remove item, responses: {"204": {description: Removed}}}}
+  /api/carts/discount: {post: {summary: Apply discount, responses: {"200": {description: Priced cart}, "422": {description: Not applicable}}}}
+  /api/carts/checkout-summary: {post: {summary: Revalidate and price checkout, responses: {"200": {description: Checkout summary}, "422": {description: Empty cart or changed total}}}}
+  /api/carts/{cartId}/checked-out: {post: {summary: Mark cart checked out, responses: {"200": {description: Checked out}}}}

@@ -1,0 +1,7 @@
+openapi: 3.0.3
+info: {title: Payment Simulation API, version: v1}
+servers: [{url: http://localhost:8086}]
+paths:
+  /api/payments: {post: {summary: Simulate payment, parameters: [{name: Idempotency-Key, in: header, required: true, schema: {type: string}}], responses: {"201": {description: Transaction}, "200": {description: Existing idempotent transaction}, "422": {description: Idempotency conflict}}}, get: {summary: List order payments, responses: {"200": {description: Transactions}}}}
+  /api/payments/{id}: {get: {summary: Read payment and attempts, responses: {"200": {description: Transaction}}}}
+  /api/payments/{id}/refund: {post: {summary: Create one refund, responses: {"201": {description: Refund}, "409": {description: Invalid payment state}}}}

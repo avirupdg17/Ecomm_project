@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info: {title: Inventory API, version: v1}
+servers: [{url: http://localhost:8083}]
+paths:
+  /api/inventory/{productId}: {get: {summary: Read stock, responses: {"200": {description: Stock}}}}
+  /api/inventory/{productId}/adjustments: {post: {summary: Adjust stock, responses: {"200": {description: Updated}, "409": {description: Negative stock}}}}
+  /api/inventory/reservations: {post: {summary: Reserve all requested lines, responses: {"201": {description: Pending reservation}, "409": {description: Insufficient stock}}}}
+  /api/inventory/reservations/{id}/confirm: {post: {summary: Confirm reservation, responses: {"200": {description: Confirmed}}}}
+  /api/inventory/reservations/{id}/release: {post: {summary: Release reservation, responses: {"200": {description: Released}}}}
+  /api/inventory/reservations/{id}: {get: {summary: Read reservation, responses: {"200": {description: Reservation}}}}

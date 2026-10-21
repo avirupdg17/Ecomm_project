@@ -1,0 +1,9 @@
+openapi: 3.0.3
+info: {title: Order Management API, version: v1}
+servers: [{url: http://localhost:8085}]
+paths:
+  /api/orders: {post: {summary: Run checkout saga, parameters: [{name: Idempotency-Key, in: header, required: true, schema: {type: string, format: uuid}}], responses: {"201": {description: Order created}, "200": {description: Existing idempotent order}, "409": {description: Insufficient stock}, "503": {description: Recoverable dependency failure}}}}
+  /api/orders/{id}: {get: {summary: Read order and history, responses: {"200": {description: Order}, "403": {description: Forbidden}}}}
+  /api/orders/customer/{customerId}: {get: {summary: List customer orders, responses: {"200": {description: Page}}}}
+  /api/orders/{id}/cancel: {post: {summary: Cancel before delivery and compensate, responses: {"200": {description: Cancelled}, "409": {description: Invalid state}}}}
+  /api/orders/{id}/recover: {post: {summary: Resume pending saga step, responses: {"200": {description: Recovered}}}}
